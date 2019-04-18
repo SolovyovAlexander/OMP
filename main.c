@@ -3,9 +3,10 @@
 #include <string.h>
 
 
+#define SIZE_RGB_COMPONENT 255
+
 typedef struct {
-    int x, y;
-    unsigned char pixels[3];
+    int pixels[3];
 } Pixel;
 
 typedef struct {
@@ -14,13 +15,64 @@ typedef struct {
     Pixel *matrix;
 } Image;
 
+static Image *black_and_white(Image *image) {
+    for (int i = 0; i < image->width; ++i) {
+        for (int j = 0; j < image->height; ++j) {
+            int r = (image->matrix + i * image->height + j)->pixels[0];
+            int g = (image->matrix + i * image->height + j)->pixels[1];
+            int b = (image->matrix + i * image->height + j)->pixels[2];
+            int avg = (r + g + b) / 3;
+
+            (image->matrix + i * image->height + j)->pixels[0] = avg;
+            (image->matrix + i * image->height + j)->pixels[1] = avg;
+            (image->matrix + i * image->height + j)->pixels[2] = avg;
+        }
+    }
+    return image;
+}
+
+
+static void save_picture(const char *filename, Image *image) {
+    FILE *file;
+    //open file for output
+    file = fopen(filename, "wb");
+    if (!file) {
+        fprintf(stderr, "Unable to open file '%s'\n", filename);
+        exit(1);
+    }
+
+    //write the header file
+    //image format
+    fprintf(file, "P3\n");
+
+
+
+    //image size
+    fprintf(file, "%d %d\n", image->width, image->height);
+
+    // rgb component depth
+    fprintf(file, "%d\n", SIZE_RGB_COMPONENT);
+
+    // pixel data
+    for (int i = 0; i <image->width; ++i) {
+        for (int j = 0; j < image->height; ++j) {
+            fprintf(file, "%d\n", (image->matrix + i * image->height + j)->pixels[0]);
+            fprintf(file, "%d\n", (image->matrix + i * image->height + j)->pixels[1]);
+            fprintf(file, "%d\n", (image->matrix + i * image->height + j)->pixels[2]);
+        }
+    }
+
+
+
+    fclose(file);
+
+}
 
 static Image *readImage(const char *filename) {
     char format[16];
-    char size[1024];
     Image *image;
     FILE *file;
-    int c;
+    int c, rgb_comp_color;
     //open PPM file for reading
     file = fopen(filename, "rb");
     if (!file) {
@@ -54,29 +106,86 @@ static Image *readImage(const char *filename) {
     //check for comments
     c = getc(file);
     while (c == '#') {
-        while (getc(file) != '\n') ;
+        while (getc(file) != '\n');
         c = getc(file);
     }
 
     ungetc(c, file);
 
-    //read size
-    if (!fgets(size, sizeof(size), file)) {
-        perror(filename);
+
+    //read image size
+    if (fscanf(file, "%d %d", &image->width, &image->height) != 2) {
+        fprintf(stderr, "Invalid image size (error loading '%s')\n", filename);
         exit(1);
     }
-    printf("%s",size);
-    char *height_or_width;
-    char space[1] = " ";
-    char space1[1] = "\000";
-    strtok(size, space1);
-    height_or_width = strtok(size, space);
+    printf("%d %d\n", image->width, image->height);
 
-    sscanf(height_or_width, "%d", &image->width);
-    printf("%d\n", image->width);
-    height_or_width = strtok(NULL, space);
-    sscanf(height_or_width, "%d", &image->height);
-    printf("%d\n", image->height);
+    //read size of rgb component
+    if (fscanf(file, "%d", &rgb_comp_color) != 1) {
+        fprintf(stderr, "Invalid rgb component (error loading '%s')\n", filename);
+        exit(1);
+    }
+
+    if (rgb_comp_color != SIZE_RGB_COMPONENT) {
+        fprintf(stderr, "'%s' does not have 8-bits components\n", filename);
+        exit(1);
+    }
+
+    while (fgetc(file) != '\n');
+
+    //memory allocaion for matrix
+    image->matrix = (Pixel *) malloc(sizeof(Pixel) * (image->height) * (image->width));
+    if (!image->matrix) {
+        fprintf(stderr, "Unable to allocate memory\n");
+        exit(1);
+    }
+
+
+
+
+    //read pixels of image works only for P3 format
+    if (format[1] == '3') {
+        for (int i = 0; i < image->width; ++i) {
+            for (int j = 0; j < image->height; ++j) {
+
+
+                int r;
+
+                if (fscanf(file, "%d", &r) != 1) {
+                    fprintf(stderr, "Invalid image size (error loading '%s')\n", filename);
+                    exit(1);
+                }
+
+
+                int g;
+
+                if (fscanf(file, "%d", &g) != 1) {
+                    fprintf(stderr, "Invalid image size (error loading '%s')\n", filename);
+                    exit(1);
+                }
+
+
+                int b;
+
+                if (fscanf(file, "%d\n", &b) != 1) {
+                    fprintf(stderr, "Invalid image size (error loading '%s')\n", filename);
+                    exit(1);
+                }
+
+                (image->matrix + i * image->height + j)->pixels[0] = r;
+                (image->matrix + i * image->height + j)->pixels[1] = g;
+                (image->matrix + i * image->height + j)->pixels[2] = b;
+
+
+
+
+            }
+
+        }
+    }
+
+
+
 
 
 
@@ -88,13 +197,9 @@ static Image *readImage(const char *filename) {
 int main() {
 
     //open and read our ppm image
-   readImage("/home/alexander/Изображения/boxes_1.ppm");
-    readImage("/home/alexander/Изображения/test.ppm");
-    readImage("/home/alexander/Изображения/test_b.ppm");
+    Image *img = readImage("/home/alexander/Изображения/test.ppm");
+    img = black_and_white(img);
+    save_picture("/home/alexander/Изображения/try.ppm", img);
 
-
-    //allocate memory for our image
-    Image *image = malloc(sizeof(Image));
-    image->matrix = malloc(sizeof(Pixel) * (image->height) * (image->width));
 
 }
