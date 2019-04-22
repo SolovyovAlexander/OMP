@@ -8,7 +8,7 @@ How to install and run this program:
   
   ./my_converter -i 'input image' -r 'output image' -p 'number of threads'
   
-  !!!Input and output image should have ppm format. It can be P3 or P6 type, program works with both
+  !!! Input and output image should have ppm format. It can be P3 or P6 type, program works with both
   
   example: ./my_converter -i /home/alexander/Изображения/hair.ppm -r /home/alexander/Изображения/test.ppm -p 5
   
