@@ -61,6 +61,7 @@ Image *readImage(const char *filename, Image *image) {
 
     file = fopen(filename, "rb");
     if (!file) {
+        printf("wtf\n");
         fprintf(stderr, "Unable to open file '%s'\n", filename);
         exit(1);
     }
@@ -70,7 +71,6 @@ Image *readImage(const char *filename, Image *image) {
         perror(filename);
         exit(1);
     }
-    printf("%s", format);
 
     if (format[0] != 'P' || (format[1] != '6' && format[1] != '3')) {
         fprintf(stderr, "Invalid image format (must be 'P6' or 'P3')\n");
@@ -103,7 +103,6 @@ Image *readImage(const char *filename, Image *image) {
         fprintf(stderr, "Invalid image size (error loading '%s')\n", filename);
         exit(1);
     }
-    printf("%d %d\n", image->width, image->height);
 
     //read size of rgb component
     if (fscanf(file, "%d", &rgb_comp_color) != 1) {
