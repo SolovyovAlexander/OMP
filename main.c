@@ -8,8 +8,9 @@
 
 #define SIZE_RGB_COMPONENT 255
 
+
 typedef struct {
-    int pixels[3];
+    unsigned char pixels[3];
 } Pixel;
 
 typedef struct {
@@ -18,7 +19,7 @@ typedef struct {
     Pixel *matrix;
 } Image;
 
-typedef struct{
+typedef struct {
     int i_s;
     int i_f;
 
@@ -195,6 +196,12 @@ static Image *readImage(const char *filename) {
 
         }
     }
+    if (format[1]=='6'){
+        if (fread(image->matrix, 3 * image->width, image->height, file) != image->height) {
+            fprintf(stderr, "Error loading image '%s'\n", filename);
+            exit(1);
+        }
+    }
 
 
     fclose(file);
@@ -247,16 +254,17 @@ static Image *sobel_operator() {
     return image;
 }
 
-void * sobel_operator_multithread(void *thread_data){
-    pthrData *data = (pthrData*) thread_data;
+void *sobel_operator_multithread(void *thread_data) {
+    pthrData *data = (pthrData *) thread_data;
 
     int A[3][3];
     int Gx;
     int Gy;
     int G;
 
-    for (int i = data->i_s; i < data->i_f ; ++i) {
-        if (i> image->width && i%image->width!=0 && i%image->width!= image->width-1 && i< image->height * image->width - 1 - image->width){
+    for (int i = data->i_s; i < data->i_f; ++i) {
+        if (i > image->width && i % image->width != 0 && i % image->width != image->width - 1 &&
+            i < image->height * image->width - 1 - image->width) {
             A[1][1] = (image->matrix + i)->pixels[0];
             A[0][0] = (image->matrix + i - image->width - 1)->pixels[0];
             A[0][1] = (image->matrix + i - image->width)->pixels[0];
@@ -276,11 +284,10 @@ void * sobel_operator_multithread(void *thread_data){
             if (G > 255) {
                 G = 255;
             }
-            if (G < 0){
-                printf("%d %d %d\n",G,Gx,Gy);
+            if (G < 0) {
+                printf("%d %d %d\n", G, Gx, Gy);
 
             }
-
 
 
             (data->new_matrix + i)->pixels[0] = G;
@@ -302,33 +309,33 @@ unsigned long get_time() {
     return ret;
 }
 
-void sobel_multi(int number_of_threads){
+void sobel_multi(int number_of_threads) {
 
 
-    pthread_t* pthreads = (pthread_t*) malloc(number_of_threads * sizeof(pthread_t));
+    pthread_t *pthreads = (pthread_t *) malloc(number_of_threads * sizeof(pthread_t));
 
-    pthrData* threadData = (pthrData*) malloc(number_of_threads * sizeof(pthrData));
+    pthrData *threadData = (pthrData *) malloc(number_of_threads * sizeof(pthrData));
     Pixel *new_matrix = (Pixel *) malloc(sizeof(Pixel) * (image->height) * (image->width));
 
 
-    div_t n = div((image->height * image->width),number_of_threads);
+    div_t n = div((image->height * image->width), number_of_threads);
 
 
-    if (n.rem==0){
-        for (int i = 0; i <number_of_threads ; ++i) {
-            threadData[i].i_s = i * n.quot ;
+    if (n.rem == 0) {
+        for (int i = 0; i < number_of_threads; ++i) {
+            threadData[i].i_s = i * n.quot;
             threadData[i].i_f = threadData[i].i_s + n.quot - 1;
             threadData[i].new_matrix = new_matrix;
             pthread_create(&(pthreads[i]), NULL, sobel_operator_multithread, &threadData[i]);
         }
 
-        for(int i = 0; i < number_of_threads; i++)
+        for (int i = 0; i < number_of_threads; i++)
             pthread_join(pthreads[i], NULL);
         free(pthreads);
         free(threadData);
-    } else{
-        for (int i = 0; i <number_of_threads; ++i) {
-            threadData[i].i_s = i * n.quot ;
+    } else {
+        for (int i = 0; i < number_of_threads; ++i) {
+            threadData[i].i_s = i * n.quot;
             threadData[i].i_f = threadData[i].i_s + n.quot - 1;
             threadData[i].new_matrix = new_matrix;
             pthread_create(&(pthreads[i]), NULL, sobel_operator_multithread, &threadData[i]);
@@ -337,19 +344,19 @@ void sobel_multi(int number_of_threads){
 
 
         // for remaining part of pixels
-        pthread_t* pthreads1 = (pthread_t*) malloc(sizeof(pthread_t));
+        pthread_t *pthreads1 = (pthread_t *) malloc(sizeof(pthread_t));
         //сколько потоков - столько и структур с потоковых данных
-        pthrData* threadData1 = (pthrData*) malloc(sizeof(pthrData));
-        threadData1->i_s = ((image->height) * (image->width)) - n.rem - 1 ;
-        threadData1->i_f= ((image->height) * (image->width)) - 1;
+        pthrData *threadData1 = (pthrData *) malloc(sizeof(pthrData));
+        threadData1->i_s = ((image->height) * (image->width)) - n.rem - 1;
+        threadData1->i_f = ((image->height) * (image->width)) - 1;
 
         threadData1->new_matrix = new_matrix;
         pthread_create(pthreads1, NULL, sobel_operator_multithread, threadData1);
 
 
-        for(int i = 0; i < number_of_threads; i++)
+        for (int i = 0; i < number_of_threads; i++)
             pthread_join(pthreads[i], NULL);
-        pthread_join(*pthreads1,NULL);
+        pthread_join(*pthreads1, NULL);
         free(pthreads);
         free(threadData);
         free(pthreads1);
@@ -366,17 +373,14 @@ void sobel_multi(int number_of_threads){
 int main() {
 
     //open and read our ppm image
-    image = readImage("/home/alexander/Изображения/earth.ppm");
+    image = readImage("/home/alexander/Изображения/test.ppm");
     image = black_and_white();
     //work with threads
     long start_time = get_time();
     sobel_multi(10);
-    printf ("Sobel took %ld ms.\n", get_time() - start_time);
+    printf("Sobel took %ld ms.\n", get_time() - start_time);
 
-    save_picture("/home/alexander/Изображения/try1.ppm");
-
-
-
+    save_picture("/home/alexander/Изображения/try.ppm");
 
 
 }
