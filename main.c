@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
 
             long start_time = get_time();
             sobel_multi(num_threads, image);
-            printf("Sobel took %ld ms.\n", get_time() - start_time);
+            printf("Time of sobel algorithm %ld ms.\n", get_time() - start_time);
 
             save_picture(output, image);
         }

@@ -22,54 +22,6 @@ Image *black_and_white(Image *image) {
     return image;
 }
 
-
-//implementation of sobel operator, doesn't support multithreading
-Image *sobel_operator(Image *image) {
-
-    int A[3][3];
-    int Gx;
-    int Gy;
-    int G;
-    Pixel *new = (Pixel *) malloc(sizeof(Pixel) * (image->height) * (image->width));
-    for (int i = 1; i < image->height - 1; ++i) {
-        for (int j = 1; j < image->width - 1; ++j) {
-            //fill the matrix
-
-            A[1][1] = (image->matrix + i * image->width + j)->pixels[0];
-            A[0][0] = (image->matrix + i * image->width + j - image->width - 1)->pixels[0];
-            A[0][1] = (image->matrix + i * image->width + j - image->width)->pixels[0];
-            A[0][2] = (image->matrix + i * image->width + j - image->width + 1)->pixels[0];
-            A[1][0] = (image->matrix + i * image->width + j - 1)->pixels[0];
-            A[1][2] = (image->matrix + i * image->width + j + 1)->pixels[0];
-            A[2][0] = (image->matrix + i * image->width + j + image->width - 1)->pixels[0];
-            A[2][1] = (image->matrix + i * image->width + j + image->width)->pixels[0];
-            A[2][2] = (image->matrix + i * image->width + j + image->width + 1)->pixels[0];
-
-
-            Gx = -1 * A[0][0] + -2 * A[1][0] + -1 * A[2][0] + A[0][2] + 2 * A[1][2] + A[2][2];
-
-            Gy = -1 * A[0][0] + -2 * A[0][1] + -1 * A[0][2] + A[2][0] + 2 * A[2][1] + A[2][2];
-
-
-            G = (int) sqrt(pow(Gx, 2) + pow(Gy, 2));
-            if (G > 255) {
-                G = 255;
-            }
-
-
-            (new + i * image->width + j)->pixels[0] = G;
-            (new + i * image->width + j)->pixels[1] = G;
-            (new + i * image->width + j)->pixels[2] = G;
-
-
-        }
-    }
-    free(image->matrix);
-    image->matrix = new;
-    return image;
-}
-
-
 void *sobel_operator_multithread(void *thread_data) {
     pthrData *data = (pthrData *) thread_data;
     Image *image = data->image;
@@ -174,3 +126,53 @@ void sobel_multi(int number_of_threads, Image *image) {
     image->matrix = new_matrix;
 
 }
+
+
+//first implementation of sobel operator, doesn't support multithreading
+//i don't use this function in program
+Image *sobel_operator(Image *image) {
+
+    int A[3][3];
+    int Gx;
+    int Gy;
+    int G;
+    Pixel *new = (Pixel *) malloc(sizeof(Pixel) * (image->height) * (image->width));
+    for (int i = 1; i < image->height - 1; ++i) {
+        for (int j = 1; j < image->width - 1; ++j) {
+            //fill the matrix
+
+            A[1][1] = (image->matrix + i * image->width + j)->pixels[0];
+            A[0][0] = (image->matrix + i * image->width + j - image->width - 1)->pixels[0];
+            A[0][1] = (image->matrix + i * image->width + j - image->width)->pixels[0];
+            A[0][2] = (image->matrix + i * image->width + j - image->width + 1)->pixels[0];
+            A[1][0] = (image->matrix + i * image->width + j - 1)->pixels[0];
+            A[1][2] = (image->matrix + i * image->width + j + 1)->pixels[0];
+            A[2][0] = (image->matrix + i * image->width + j + image->width - 1)->pixels[0];
+            A[2][1] = (image->matrix + i * image->width + j + image->width)->pixels[0];
+            A[2][2] = (image->matrix + i * image->width + j + image->width + 1)->pixels[0];
+
+
+            Gx = -1 * A[0][0] + -2 * A[1][0] + -1 * A[2][0] + A[0][2] + 2 * A[1][2] + A[2][2];
+
+            Gy = -1 * A[0][0] + -2 * A[0][1] + -1 * A[0][2] + A[2][0] + 2 * A[2][1] + A[2][2];
+
+
+            G = (int) sqrt(pow(Gx, 2) + pow(Gy, 2));
+            if (G > 255) {
+                G = 255;
+            }
+
+
+            (new + i * image->width + j)->pixels[0] = G;
+            (new + i * image->width + j)->pixels[1] = G;
+            (new + i * image->width + j)->pixels[2] = G;
+
+
+        }
+    }
+    free(image->matrix);
+    image->matrix = new;
+    return image;
+}
+
+
