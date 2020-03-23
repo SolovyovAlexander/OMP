@@ -1,4 +1,4 @@
-# OMP
+# Multiple threads implementation of sobel operator for .ppm images
 How to install and run this program:
   1) Download all files from this repository.
   2) Open terminal and enter in directory with downloaded files
